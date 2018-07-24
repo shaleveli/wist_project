@@ -48,6 +48,7 @@ def all_card_symbols():
 def all_card_nums():
     return range(1, 15)
 
+
 class Color(Enum):
     RED = 1
     BLACK = 2

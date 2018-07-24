@@ -13,20 +13,25 @@ class WistGame(Game):
     highest_bidding_contract = None  # type: WistContract
     current_round_cards = PLAYERS_NUMBER*[None]  # type: list[Card]
     lead_card = None  # type: Card
-    first_contract = None  # type: bool
+    declared_contract = None  # type: bool
+    # How many players declared their contract
     game_round = None  # type: int
     # During the bidding it is 0, and during the GAME mode it is the index of the current round
     winners = None  # type: list[bool]
     # Starts as PLAYERS_NUMBER*[False], at the end contains whether each player won or not
+    contracts_sum = None  # type: int
+    ended_game = None  # type: bool
 
     def __init__(self):
         self.game_mode = WistGameMode.TRUMP_BIDDING
         Game.__init__(self, self.PLAYERS_NUMBER)
         self.active_player_idx = 0
         self.divide_cards()
-        self.first_contract = False
+        self.declared_contract = 0
         self.game_round = 0
         self.winners = self.PLAYERS_NUMBER * [False]
+        self.contracts_sum = 0
+        self.ended_game = False
 
     def divide_cards(self):
         cards_pile = []
@@ -88,17 +93,32 @@ class WistGame(Game):
         if self.end_of_trump_bidding():
             self.game_mode = WistGameMode.CONTRACT_BIDDING
             self.trump_symbol = self.highest_bidding_contract.symbol
-            self.first_contract = True
+            self.declared_contract = True
         self.update_turn()
 
     def contract_bidding_turn(self, bidding_num):
-        if self.first_contract and bidding_num < self.highest_bidding_contract.num:
-            raise ValueError("Contract must be at least as stated")
+        if bidding_num not in self.legal_contracts():
+            raise ValueError("Illegal contract")
         self.players[self.active_player_idx].contract = bidding_num
-        self.first_contract = False
+        self.declared_contract = self.declared_contract + 1
+        self.contracts_sum = self.contracts_sum + bidding_num
         if self.end_of_contract_bidding():
             self.game_mode = WistGameMode.GAME
         self.update_turn()
+
+    def legal_contracts(self):
+        """returns a list of all legal bids for the next player"""
+        legal_bids = []
+        if self.declared_contract == 0:
+            for i in xrange(self.highest_bidding_contract.num, self.CARDS_IN_HAND + 1):
+                legal_bids.append(i)
+        else:
+            for i in xrange(self.CARDS_IN_HAND + 1):
+                legal_bids.append(i)
+            if (self.declared_contract == (self.PLAYERS_NUMBER - 1)
+                and (self.CARDS_IN_HAND - self.contracts_sum) in legal_bids):
+                legal_bids.remove(self.CARDS_IN_HAND - self.contracts_sum)
+        return legal_bids
 
     def regular_turn(self, card_from_hand):
         if self.beginning_of_regular_turn():
@@ -114,6 +134,7 @@ class WistGame(Game):
             self.current_round_cards = self.PLAYERS_NUMBER*[None]
             if self.game_round == self.CARDS_IN_HAND:
                 self.update_winning_players()
+                self.ended_game = True
             else:
                 self.update_turn(win_player_idx)
             return
