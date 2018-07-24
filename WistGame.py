@@ -19,8 +19,11 @@ class WistGame(Game):
     # During the bidding it is 0, and during the GAME mode it is the index of the current round
     winners = None  # type: list[bool]
     # Starts as PLAYERS_NUMBER*[False], at the end contains whether each player won or not
+    scores = None  # type: list[int]
+    # At the end of the game, contains the scores of each player
     contracts_sum = None  # type: int
     ended_game = None  # type: bool
+    is_under_game = None  # type: bool
 
     def __init__(self):
         self.game_mode = WistGameMode.TRUMP_BIDDING
@@ -30,6 +33,7 @@ class WistGame(Game):
         self.declared_contract = 0
         self.game_round = 0
         self.winners = self.PLAYERS_NUMBER * [False]
+        self.scores = self.PLAYERS_NUMBER * [0]
         self.contracts_sum = 0
         self.ended_game = False
 
@@ -74,11 +78,27 @@ class WistGame(Game):
                 return False
         return True
 
-    def update_winning_players(self):
-        """Updates the list that determines whether each player won,
+    def update_winners_and_scores(self):
+        """Updates the lists winners and scores
         assuming the game was ended."""
         for i in xrange(self.PLAYERS_NUMBER):
-            self.winners[i] = (self.players[i].taken_rounds == self.players[i].contract)
+            contract = self.players[i].contract
+            if self.players[i].taken_rounds == contract:
+                self.winners[i] = True
+                if contract != 0:
+                    self.scores[i] = 10 + contract*contract
+                else: # succeeded a contract of 0
+                    if self.is_under_game:
+                        self.scores[i] = 50
+                    else: # over game
+                        self.scores[i] = 25
+            else:
+                self.winners[i] = False
+                if contract != 0:
+                    self.scores[i] = -10*abs(self.players[i].taken_rounds - contract)
+                else:
+                    self.scores[i] = -60 + 10*self.players[i].taken_rounds
+
 
     def trump_bidding_turn(self, bidding_contract):
         if not self.players[self.active_player_idx].passed:
@@ -103,6 +123,7 @@ class WistGame(Game):
         self.declared_contract = self.declared_contract + 1
         self.contracts_sum = self.contracts_sum + bidding_num
         if self.end_of_contract_bidding():
+            self.is_under_game = self.contracts_sum < self.CARDS_IN_HAND
             self.game_mode = WistGameMode.GAME
         self.update_turn()
 
@@ -133,7 +154,7 @@ class WistGame(Game):
             self.players[win_player_idx].win_turn(set(self.current_round_cards))
             self.current_round_cards = self.PLAYERS_NUMBER*[None]
             if self.game_round == self.CARDS_IN_HAND:
-                self.update_winning_players()
+                self.update_winners_and_scores()
                 self.ended_game = True
             else:
                 self.update_turn(win_player_idx)
@@ -168,17 +189,17 @@ class WistGame(Game):
             for i in xrange(players_num):
                 self.players.append(WistPlayer())
 
-    def compare_cards(self, card1, card2, lead_symbol):
+    def compare_cards(self, card1, card2):
         """returns whether card1 is bigger than card2. The default is False"""
         if card1.symbol == card2.symbol:
-            return card1.num < card2.num
+            return card1.num > card2.num
         elif card1.symbol == self.trump_symbol:
             return True
         elif card2.symbol == self.trump_symbol:
             return False
-        elif card1.symbol == lead_symbol:
+        elif card1.symbol == self.lead_card.symbol:
             return True
-        elif card2.symbol == lead_symbol:
+        elif card2.symbol == self.lead_card.symbol:
             return False
         else:
             return False
@@ -186,9 +207,10 @@ class WistGame(Game):
     def winning_player_in_round(self):
         current_winner = 0
         for i in xrange(self.PLAYERS_NUMBER):
-            if self.current_round_cards[i] > self.current_round_cards[current_winner]:
+            if self.compare_cards(self.current_round_cards[i], self.current_round_cards[current_winner]):
                 current_winner = i
         return current_winner
+
 
 
 class WistGameMode(Enum):
