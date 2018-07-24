@@ -1,5 +1,5 @@
 from Player import Player
-##
+
 
 class Game:
     active_players = None  # type: list[Player]
