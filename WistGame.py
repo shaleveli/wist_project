@@ -13,7 +13,11 @@ class WistGame(Game):
     highest_bidding_contract = None  # type: WistContract
     current_round_cards = PLAYERS_NUMBER*[None]  # type: list[Card]
     lead_card = None  # type: Card
-    first_contract = None # type: bool
+    first_contract = None  # type: bool
+    game_round = None  # type: int
+    # During the bidding it is 0, and during the GAME mode it is the index of the current round
+    winners = None  # type: list[bool]
+    # Starts as PLAYERS_NUMBER*[False], at the end contains whether each player won or not
 
     def __init__(self):
         self.game_mode = WistGameMode.TRUMP_BIDDING
@@ -21,6 +25,8 @@ class WistGame(Game):
         self.active_player_idx = 0
         self.divide_cards()
         self.first_contract = False
+        self.game_round = 0
+        self.winners = self.PLAYERS_NUMBER * [False]
 
     def divide_cards(self):
         cards_pile = []
@@ -63,10 +69,11 @@ class WistGame(Game):
                 return False
         return True
 
-    def winning_players(self):
-        """If the game was ended, returns a list that determines whether each player won.
-        Otherwise, returns None"""
-
+    def update_winning_players(self):
+        """Updates the list that determines whether each player won,
+        assuming the game was ended."""
+        for i in xrange(self.PLAYERS_NUMBER):
+            self.winners[i] = (self.players[i].taken_rounds == self.players[i].contract)
 
     def trump_bidding_turn(self, bidding_contract):
         if not self.players[self.active_player_idx].passed:
@@ -96,6 +103,7 @@ class WistGame(Game):
     def regular_turn(self, card_from_hand):
         if self.beginning_of_regular_turn():
             self.lead_card = card_from_hand
+            self.game_round = self.game_round + 1
         elif card_from_hand not in self.players[self.active_player_idx].legal_play():
             raise ValueError("Card is not legal")
         self.players[self.active_player_idx].cards.remove(card_from_hand)
@@ -104,7 +112,10 @@ class WistGame(Game):
             win_player_idx = self.winning_player_in_round()
             self.players[win_player_idx].win_turn(set(self.current_round_cards))
             self.current_round_cards = self.PLAYERS_NUMBER*[None]
-            self.update_turn(win_player_idx)
+            if self.game_round == self.CARDS_IN_HAND:
+                self.update_winning_players()
+            else:
+                self.update_turn(win_player_idx)
             return
         self.update_turn()
 

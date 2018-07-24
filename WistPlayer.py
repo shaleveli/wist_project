@@ -8,11 +8,11 @@ class WistPlayer(Player):
     trump_contract = None  # type:WistContract
     passed = None  # type:bool
     taken_cards_pack = None  # type:set(Card)
-    wined_rounds = None  # type:int
+    taken_rounds = None  # type:int
 
     def __init__(self, name=None):
         Player.__init__(name)
-        self.wined_rounds = 0
+        self.taken_rounds = 0
         self.taken_cards_pack = set()
         pass
 
@@ -38,4 +38,4 @@ class WistPlayer(Player):
 
     def win_turn(self, round_cards):
         self.taken_cards_pack = self.taken_cards_pack.union(round_cards)
-        self.wined_rounds = self.wined_rounds + 1
+        self.taken_rounds = self.taken_rounds + 1
