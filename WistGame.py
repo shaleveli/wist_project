@@ -10,20 +10,27 @@ class WistGame(Game):
     PLAYERS_NUMBER = 4
     CARDS_IN_HAND = 13
     active_player_idx = None  # type: int
+    start_of_game = None  # type: bool
+    trump_bidding_round = None  # type: int
     highest_bidding_contract = None  # type: WistContract
-    current_round_cards = PLAYERS_NUMBER*[None]  # type: list[Card]
-    lead_card = None  # type: Card
+    trump_bidding_table = []  # type: list[list[WistContract]]
+    # contains all trump-bidding contracts until now.
+    # trump_bidding_table[i][j] is the contract of player j in the i+1 bidding round.
+    bidding_winner = None  # type: int
+    # the index of the player who won the bidding
     declared_contract = None  # type: bool
     # How many players declared their contract
+    contracts_sum = None  # type: int
+    is_under_game = None  # type: bool
     game_round = None  # type: int
     # During the bidding it is 0, and during the GAME mode it is the index of the current round
+    current_round_cards = PLAYERS_NUMBER * [None]  # type: list[Card]
+    lead_card = None  # type: Card
     winners = None  # type: list[bool]
     # Starts as PLAYERS_NUMBER*[False], at the end contains whether each player won or not
     scores = None  # type: list[int]
     # At the end of the game, contains the scores of each player
-    contracts_sum = None  # type: int
     ended_game = None  # type: bool
-    is_under_game = None  # type: bool
 
     def __init__(self):
         self.game_mode = WistGameMode.TRUMP_BIDDING
@@ -36,6 +43,8 @@ class WistGame(Game):
         self.scores = self.PLAYERS_NUMBER * [0]
         self.contracts_sum = 0
         self.ended_game = False
+        self.start_of_game = True
+        self.trump_bidding_round = 0
 
     def divide_cards(self):
         cards_pile = []
@@ -87,10 +96,10 @@ class WistGame(Game):
                 self.winners[i] = True
                 if contract != 0:
                     self.scores[i] = 10 + contract*contract
-                else: # succeeded a contract of 0
+                else:  # succeeded a contract of 0
                     if self.is_under_game:
                         self.scores[i] = 50
-                    else: # over game
+                    else:  # over game
                         self.scores[i] = 25
             else:
                 self.winners[i] = False
@@ -99,22 +108,34 @@ class WistGame(Game):
                 else:
                     self.scores[i] = -60 + 10*self.players[i].taken_rounds
 
-
     def trump_bidding_turn(self, bidding_contract):
-        if not self.players[self.active_player_idx].passed:
-            if bidding_contract.is_pass:
-                self.players[self.active_player_idx].passed = True
-            else:
-                self.players[self.active_player_idx].passed = False
-                if bidding_contract <= self.highest_bidding_contract:
-                    raise ValueError("bidding_contract must be higher then highest_bidding_contract")
-                else:
-                    self.highest_bidding_contract = bidding_contract
-        if self.end_of_trump_bidding():
+        if self.start_of_game and bidding_contract.is_pass:
+            raise ValueError("First player cannot pass")
+        if not bidding_contract.is_pass:
+            if self.players[self.active_player_idx].passed:  # not supposed to happen
+                raise ValueError("this player has already passed")
+            if bidding_contract <= self.highest_bidding_contract:
+                raise ValueError("bidding_contract must be higher then highest_bidding")
+        if self.start_of_game:
+            self.start_of_game = False
+        if self.active_player_idx == 0:
+            self.trump_bidding_table.append([])
+            self.trump_bidding_round = self.trump_bidding_round + 1
+
+        self.players[self.active_player_idx].passed = bidding_contract.is_pass
+        self.trump_bidding_table[self.trump_bidding_round - 1].append(bidding_contract)
+        if not bidding_contract.is_pass:
+            self.highest_bidding_contract = bidding_contract
+            self.bidding_winner = self.active_player_idx
+
+        next_player = (self.active_player_idx + 1) % self.PLAYERS_NUMBER
+        if self.end_of_trump_bidding() and next_player == self.bidding_winner:
             self.game_mode = WistGameMode.CONTRACT_BIDDING
             self.trump_symbol = self.highest_bidding_contract.symbol
-            self.declared_contract = True
         self.update_turn()
+        # if the next player has already passed, automatically play his turn
+        if self.players[next_player].passed:
+            self.trump_bidding_turn(WistContract())
 
     def contract_bidding_turn(self, bidding_num):
         if bidding_num not in self.legal_contracts():
