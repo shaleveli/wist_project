@@ -285,5 +285,7 @@ class WistContract:
             return True
 
     def __str__(self):
+        if self.is_pass:
+            return "<contract: PASS>"
         return "<contract: " + str(self.num) + " " + card_symbol_to_string(self.symbol) +">"
 
