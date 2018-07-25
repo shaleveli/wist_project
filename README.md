@@ -1,3 +1,3 @@
 #Wist Game Project
 
-Write here any imported information and ideas
+Write here any importent information and ideas
