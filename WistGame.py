@@ -13,7 +13,7 @@ class WistGame(Game):
     start_of_game = None  # type: bool
     trump_bidding_round = None  # type: int
     highest_bidding_contract = None  # type: WistContract
-    trump_bidding_table = []  # type: list[list[WistContract]]
+    trump_bidding_table = None  # type: list[list[WistContract]]
     # contains all trump-bidding contracts until now.
     # trump_bidding_table[i][j] is the contract of player j in the i+1 bidding round.
     bidding_winner = None  # type: int
@@ -44,15 +44,17 @@ class WistGame(Game):
         self.contracts_sum = 0
         self.ended_game = False
         self.start_of_game = True
-        self.trump_bidding_round = 0
+        self.trump_bidding_round = 1
+        self.trump_bidding_table = [[]]
 
     def divide_cards(self):
         cards_pile = []
-        for symbol in all_card_symbols():
-            for num in all_card_nums():
-                cards_pile.append(Card(num, symbol))
+        for symbol in CardSymbol:
+            for num in CardNum:
+                if num != CardNum.JOKER:
+                    cards_pile.append(Card(num, symbol))
         shuffle(cards_pile)
-        for i in xrange(self.PLAYERS_NUMBER):
+        for i in range(self.PLAYERS_NUMBER):
             self.players[i].set_cards(set(cards_pile[i*self.CARDS_IN_HAND:(i+1)*self.CARDS_IN_HAND]))
 
     def end_of_trump_bidding(self):
@@ -76,13 +78,13 @@ class WistGame(Game):
             return False
 
     def end_of_regular_turn(self):
-        for i in xrange(self.PLAYERS_NUMBER):
+        for i in range(self.PLAYERS_NUMBER):
             if self.current_round_cards is None:
                 return False
         return True
 
     def beginning_of_regular_turn(self):
-        for i in xrange(self.PLAYERS_NUMBER):
+        for i in range(self.PLAYERS_NUMBER):
             if self.current_round_cards is not None:
                 return False
         return True
@@ -90,7 +92,7 @@ class WistGame(Game):
     def update_winners_and_scores(self):
         """Updates the lists winners and scores
         assuming the game was ended."""
-        for i in xrange(self.PLAYERS_NUMBER):
+        for i in range(self.PLAYERS_NUMBER):
             contract = self.players[i].contract
             if self.players[i].taken_rounds == contract:
                 self.winners[i] = True
@@ -112,15 +114,12 @@ class WistGame(Game):
         if self.start_of_game and bidding_contract.is_pass:
             raise ValueError("First player cannot pass")
         if not bidding_contract.is_pass:
-            if self.players[self.active_player_idx].passed:  # not supposed to happen
+            if self.trump_bidding_round != 1 and self.players[self.active_player_idx].passed:  # not supposed to happen
                 raise ValueError("this player has already passed")
-            if bidding_contract <= self.highest_bidding_contract:
+            if not self.start_of_game and bidding_contract <= self.highest_bidding_contract:
                 raise ValueError("bidding_contract must be higher then highest_bidding")
         if self.start_of_game:
             self.start_of_game = False
-        if self.active_player_idx == 0:
-            self.trump_bidding_table.append([])
-            self.trump_bidding_round = self.trump_bidding_round + 1
 
         self.players[self.active_player_idx].passed = bidding_contract.is_pass
         self.trump_bidding_table[self.trump_bidding_round - 1].append(bidding_contract)
@@ -133,6 +132,9 @@ class WistGame(Game):
             self.game_mode = WistGameMode.CONTRACT_BIDDING
             self.trump_symbol = self.highest_bidding_contract.symbol
         self.update_turn()
+        if self.active_player_idx == 0:
+            self.trump_bidding_table.append([])
+            self.trump_bidding_round += 1
         # if the next player has already passed, automatically play his turn
         if self.players[next_player].passed:
             self.trump_bidding_turn(WistContract())
@@ -152,10 +154,10 @@ class WistGame(Game):
         """returns a list of all legal bids for the next player"""
         legal_bids = []
         if self.declared_contract == 0:
-            for i in xrange(self.highest_bidding_contract.num, self.CARDS_IN_HAND + 1):
+            for i in range(self.highest_bidding_contract.num, self.CARDS_IN_HAND + 1):
                 legal_bids.append(i)
         else:
-            for i in xrange(self.CARDS_IN_HAND + 1):
+            for i in range(self.CARDS_IN_HAND + 1):
                 legal_bids.append(i)
             if (self.declared_contract == (self.PLAYERS_NUMBER - 1)
                 and (self.CARDS_IN_HAND - self.contracts_sum) in legal_bids):
@@ -166,7 +168,7 @@ class WistGame(Game):
         if self.beginning_of_regular_turn():
             self.lead_card = card_from_hand
             self.game_round = self.game_round + 1
-        elif card_from_hand not in self.players[self.active_player_idx].legal_play():
+        elif card_from_hand not in self.players[self.active_player_idx].legal_play(self.lead_card):
             raise ValueError("Card is not legal")
         self.players[self.active_player_idx].cards.remove(card_from_hand)
         self.current_round_cards[self.active_player_idx] = card_from_hand
@@ -174,6 +176,7 @@ class WistGame(Game):
             win_player_idx = self.winning_player_in_round()
             self.players[win_player_idx].win_turn(set(self.current_round_cards))
             self.current_round_cards = self.PLAYERS_NUMBER*[None]
+            self.lead_card = None
             if self.game_round == self.CARDS_IN_HAND:
                 self.update_winners_and_scores()
                 self.ended_game = True
@@ -204,10 +207,10 @@ class WistGame(Game):
             if len(players_names) != players_num:
                 raise ValueError("players_names length must be players_num")
             else:
-                for i in xrange(players_num):
+                for i in range(players_num):
                     self.players.append(WistPlayer(players_names[i]))
         else:
-            for i in xrange(players_num):
+            for i in range(players_num):
                 self.players.append(WistPlayer())
 
     def compare_cards(self, card1, card2):
@@ -227,11 +230,13 @@ class WistGame(Game):
 
     def winning_player_in_round(self):
         current_winner = 0
-        for i in xrange(self.PLAYERS_NUMBER):
+        for i in range(self.PLAYERS_NUMBER):
             if self.compare_cards(self.current_round_cards[i], self.current_round_cards[current_winner]):
                 current_winner = i
         return current_winner
 
+    def active_player_hand(self):
+        return self.players[self.active_player_idx].cards
 
 
 class WistGameMode(Enum):
@@ -241,9 +246,9 @@ class WistGameMode(Enum):
 
 
 class WistContract:
-    is_pass = None  #type: bool
-    symbol = None  #type: CardSymbol
-    num = None  #type: int
+    is_pass = None  # type: bool
+    symbol = None  # type: CardSymbol
+    num = None  # type: int
 
     def __init__(self, symbol=None, num=None):
         if symbol is None and num is None:
@@ -257,25 +262,28 @@ class WistContract:
             self.symbol = symbol
             self.num = num
 
-    def __cmp__(self, other):
+    def __le__(self, other):
         if self.num < other.num:
-            return -1
+            return True
         elif self.num > other.num:
-            return 1
+            return False
         elif self.symbol == other.symbol:
-            return 0
+            return True
         elif self.symbol == CardSymbol.SPADE:
-            return 1
+            return False
         elif self.symbol == CardSymbol.HEART:
             if other.symbol == CardSymbol.SPADE:
-                return -1
+                return True
             else:
-                return 1
+                return False
         elif self.symbol == CardSymbol.DIAMOND:
             if other.symbol == CardSymbol.SPADE or other.symbol == CardSymbol.HEART:
-                return -1
+                return True
             else:
-                return 1
+                return False
         else:  # self.symbol == CardSymbol.CLUB
-            return -1
+            return True
+
+    def __str__(self):
+        return "<contract: " + str(self.num) + " " + card_symbol_to_string(self.symbol) +">"
 

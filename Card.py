@@ -1,10 +1,10 @@
-from enum import Enum
-
+from enum import Enum, IntEnum
+from enum import IntEnum
 
 class Card:
-    num = None  #  type: CardNum
-    symbol = None  #  type: CardSymbol
-    color = None  #  type: Color
+    num = None  # type: CardNum
+    symbol = None  # type: CardSymbol
+    color = None  # type: Color
 
     def __init__(self, card_num, card_symbol=None):
         if card_num is None:
@@ -18,7 +18,6 @@ class Card:
 
 
 class CardNum(Enum):
-    ACE = 1
     TWO = 2
     THREE = 3
     FOUR = 4
@@ -31,7 +30,39 @@ class CardNum(Enum):
     J = 11
     Q = 12
     K = 13
-    JOKER = 14
+    ACE = 14
+    JOKER = 15
+
+
+def card_num_to_string(cardnum):
+    if cardnum == CardNum.TWO:
+        return "2"
+    if cardnum == CardNum.THREE:
+        return "3"
+    if cardnum == CardNum.FOUR:
+        return "4"
+    if cardnum == CardNum.FIVE:
+        return "5"
+    if cardnum == CardNum.SIX:
+        return "6"
+    if cardnum == CardNum.SEVEN:
+        return "7"
+    if cardnum == CardNum.EIGHT:
+        return "8"
+    if cardnum == CardNum.NINE:
+        return "9"
+    if cardnum == CardNum.TEN:
+        return "10"
+    if cardnum == CardNum.J:
+        return "J"
+    if cardnum == CardNum.Q:
+        return "Q"
+    if cardnum == CardNum.K:
+        return "K"
+    if cardnum == CardNum.ACE:
+        return "A"
+    if cardnum == CardNum.JOKER:
+        return "JOKER"
 
 
 class CardSymbol(Enum):
@@ -41,12 +72,19 @@ class CardSymbol(Enum):
     DIAMOND = 4
 
 
-def all_card_symbols():
-    return range(1, 5)
+def card_symbol_to_string(cardsym):
+    if cardsym == CardSymbol.HEART:
+        return "H"
+    if cardsym == CardSymbol.CLUB:
+        return "C"
+    if cardsym == CardSymbol.SPADE:
+        return "S"
+    if cardsym == CardSymbol.DIAMOND:
+        return "D"
 
 
-def all_card_nums():
-    return range(1, 15)
+def card_to_string(card):
+    return card_num_to_string(card.num) + card_symbol_to_string(card.symbol)
 
 
 class Color(Enum):

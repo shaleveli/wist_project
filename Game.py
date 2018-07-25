@@ -3,7 +3,7 @@ from Player import Player
 
 class Game:
     active_players = None  # type: list[Player]
-    players = None  # type: list[Player]
+    players = []  # type: list[Player]
 
     def __init__(self, players_num, players_names=None):
         self.players_num = players_num

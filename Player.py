@@ -1,6 +1,3 @@
-from typing import Set, Any
-
-
 class Player:
     cards = None  # type: set[Card]
     turn = None  # type: bool

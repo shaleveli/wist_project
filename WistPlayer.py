@@ -11,7 +11,7 @@ class WistPlayer(Player):
     taken_rounds = None  # type:int
 
     def __init__(self, name=None):
-        Player.__init__(name)
+        Player.__init__(self, name)
         self.taken_rounds = 0
         self.taken_cards_pack = set()
         pass
@@ -23,7 +23,8 @@ class WistPlayer(Player):
             return True
 
     def legal_play(self, lead_card):
-        """"returns set of legal play cards. lead card is the 1st card in the round or NONE if the player is 1st"""
+        """"returns a set of legal play cards.
+        lead card is the 1st card in the round or NONE if the player is 1st"""
         legal_cards = self.cards_in_symbol(lead_card.symbol)
         if len(legal_cards) == 0:
             legal_cards = self.cards
