@@ -25,6 +25,8 @@ class WistPlayer(Player):
     def legal_play(self, lead_card):
         """"returns a set of legal play cards.
         lead card is the 1st card in the round or NONE if the player is 1st"""
+        if lead_card is None:
+            return self.cards
         legal_cards = self.cards_in_symbol(lead_card.symbol)
         if len(legal_cards) == 0:
             legal_cards = self.cards

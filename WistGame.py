@@ -24,8 +24,10 @@ class WistGame(Game):
     is_under_game = None  # type: bool
     game_round = None  # type: int
     # During the bidding it is 0, and during the GAME mode it is the index of the current round
-    current_round_cards = PLAYERS_NUMBER * [None]  # type: list[Card]
+    current_round_cards = None  # type: list[Card]
     lead_card = None  # type: Card
+    takers_history = None  # type: list[int]
+    # takers_history[i] will contain the index of the taker of round i + 1
     winners = None  # type: list[bool]
     # Starts as PLAYERS_NUMBER*[False], at the end contains whether each player won or not
     scores = None  # type: list[int]
@@ -46,6 +48,8 @@ class WistGame(Game):
         self.start_of_game = True
         self.trump_bidding_round = 1
         self.trump_bidding_table = [[]]
+        self.takers_history = []
+        self.current_round_cards = self.PLAYERS_NUMBER * [None]
 
     def divide_cards(self):
         cards_pile = []
@@ -79,13 +83,13 @@ class WistGame(Game):
 
     def end_of_regular_turn(self):
         for i in range(self.PLAYERS_NUMBER):
-            if self.current_round_cards is None:
+            if self.current_round_cards[i] is None:
                 return False
         return True
 
     def beginning_of_regular_turn(self):
         for i in range(self.PLAYERS_NUMBER):
-            if self.current_round_cards is not None:
+            if self.current_round_cards[i] is not None:
                 return False
         return True
 
@@ -111,6 +115,8 @@ class WistGame(Game):
                     self.scores[i] = -60 + 10*self.players[i].taken_rounds
 
     def trump_bidding_turn(self, bidding_contract):
+        if self.game_mode != WistGameMode.TRUMP_BIDDING:
+            raise ValueError("not in trump bidding mode")
         if self.start_of_game and bidding_contract.is_pass:
             raise ValueError("First player cannot pass")
         if not bidding_contract.is_pass:
@@ -140,6 +146,8 @@ class WistGame(Game):
             self.trump_bidding_turn(WistContract())
 
     def contract_bidding_turn(self, bidding_num):
+        if self.game_mode != WistGameMode.CONTRACT_BIDDING:
+            raise ValueError("not in contract bidding mode")
         if bidding_num not in self.legal_contracts():
             raise ValueError("Illegal contract")
         self.players[self.active_player_idx].contract = bidding_num
@@ -160,11 +168,13 @@ class WistGame(Game):
             for i in range(self.CARDS_IN_HAND + 1):
                 legal_bids.append(i)
             if (self.declared_contract == (self.PLAYERS_NUMBER - 1)
-                and (self.CARDS_IN_HAND - self.contracts_sum) in legal_bids):
+                    and (self.CARDS_IN_HAND - self.contracts_sum) in legal_bids):
                 legal_bids.remove(self.CARDS_IN_HAND - self.contracts_sum)
         return legal_bids
 
     def regular_turn(self, card_from_hand):
+        if self.game_mode != WistGameMode.GAME:
+            raise ValueError("not in game mode")
         if self.beginning_of_regular_turn():
             self.lead_card = card_from_hand
             self.game_round = self.game_round + 1
@@ -174,6 +184,7 @@ class WistGame(Game):
         self.current_round_cards[self.active_player_idx] = card_from_hand
         if self.end_of_regular_turn():
             win_player_idx = self.winning_player_in_round()
+            self.takers_history.append(win_player_idx)
             self.players[win_player_idx].win_turn(set(self.current_round_cards))
             self.current_round_cards = self.PLAYERS_NUMBER*[None]
             self.lead_card = None
@@ -216,7 +227,7 @@ class WistGame(Game):
     def compare_cards(self, card1, card2):
         """returns whether card1 is bigger than card2. The default is False"""
         if card1.symbol == card2.symbol:
-            return card1.num > card2.num
+            return card1.num.value > card2.num.value
         elif card1.symbol == self.trump_symbol:
             return True
         elif card2.symbol == self.trump_symbol:
