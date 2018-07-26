@@ -63,7 +63,6 @@ game.turn(0)
 game.turn(1)
 # game.turn(3)  # error
 game.turn(4)  # replace with game.turn(2) to get is_under_game == True
-# game.turn(2)
 # game.turn(2)  # error
 for i in range(game.PLAYERS_NUMBER):
     print("player " + str(i) + " final contract: " + str(game.players[i].contract))
