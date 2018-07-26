@@ -85,4 +85,5 @@ for j in range(game.CARDS_IN_HAND):
 
 print("winners: " + str(game.winners))
 print("scores: " + str(game.scores))
+print("ended game:" + str(game.ended_game))
 print("DONE!")
