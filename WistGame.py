@@ -13,7 +13,7 @@ class WistGame(Game):
     start_of_game = None  # type: bool
     trump_bidding_round = None  # type: int
     highest_bidding_contract = None  # type: WistContract
-    trump_bidding_table = None  # type: list[list[WistContract]]
+    trump_bidding_table = None  # type: [[WistContract]]
     # contains all trump-bidding contracts until now.
     # trump_bidding_table[i][j] is the contract of player j in the i+1 bidding round.
     bidding_winner = None  # type: int
@@ -24,13 +24,13 @@ class WistGame(Game):
     is_under_game = None  # type: bool
     game_round = None  # type: int
     # During the bidding it is 0, and during the GAME mode it is the index of the current round
-    current_round_cards = None  # type: list[Card]
+    current_round_cards = None  # type: [Card]
     lead_card = None  # type: Card
-    takers_history = None  # type: list[int]
+    takers_history = None  # type: [int]
     # takers_history[i] will contain the index of the taker of round i + 1
-    winners = None  # type: list[bool]
+    winners = None  # type: [bool]
     # Starts as PLAYERS_NUMBER*[False], at the end contains whether each player won or not
-    scores = None  # type: list[int]
+    scores = None  # type: [int]
     # At the end of the game, contains the scores of each player
     ended_game = None  # type: bool
 

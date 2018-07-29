@@ -1,6 +1,7 @@
 from enum import Enum, IntEnum
 from enum import IntEnum
 
+
 class Card:
     num = None  # type: CardNum
     symbol = None  # type: CardSymbol
