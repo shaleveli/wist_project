@@ -1,6 +1,5 @@
 from Cmdl import *
 from WistGame import *
-from Globals import *
 
 
 class ShowHandCards(Cmd):
@@ -12,7 +11,7 @@ class ShowHandCards(Cmd):
     def execute(self, wist_game, cmd_line):
         """gets cards of the player. need to implement __str__() of card and function like current player cards"""
         #card_num_to_string
-        player_cards = wist_game.players[wist_game.active_player_idx].cards
+        player_cards = sorted(list(wist_game.players[wist_game.active_player_idx].cards))
         cards_strings = [card_to_str(card) for card in player_cards]
         cmd_line.print_array(cards_strings)
 
@@ -43,9 +42,9 @@ class ShowWinCards(Cmd):
 
     def execute(self, wist_game, cmd_line):
         """gets cards of the player. need to implement __str__() of card and function like current player cards"""
-        cards_strings = list(map(card_to_str, wist_game.players[wist_game.active_player_idx].taken_cards_pack))
+        card_sorted = sorted(list(wist_game.players[wist_game.active_player_idx].taken_cards_pack))
+        cards_strings = list(map(card_to_str, card_sorted))
         cmd_line.print_array(cards_strings)
-        cmd_line.print_console('\n')
 
 
 #done
@@ -56,10 +55,9 @@ class ShowTable(Cmd):
         Cmd.__init__(self, self.CMD_NAME)
 
     def execute(self, wist_game, cmd_line):
-        """gets cards of the player. need to implement __str__() of card and function like wist table cards"""
-        cards_strings = map(card_to_str, wist_game.current_round_cards).remove('None')
+        cards_strings = list(map(card_to_str, wist_game.current_round_cards))
+        cards_strings = [str(i) + ')' + cards_strings[i] + ' ' for i in range(0, wist_game.PLAYERS_NUMBER)]
         cmd_line.print_array(cards_strings)
-        cmd_line.print_console('\n')
 
 
 #done
@@ -114,29 +112,36 @@ class DropCard(Cmd):
             pass
         else:
             raise ValueError("d command can be used only in game mode")
+        nums_list = [n for n in CardNum]
+        str_nums_list = [card_num_to_string(c) for c in nums_list]
         try:
-            card_num = int(self.cmd_args[self.NUM_LOCATION])
-        except ValueError:
-            raise TypeError("First argument[card_num] must be an int")
-
-        card_sym = None
-        for sym in CardSymbol:
-            print(card_symbol_to_string(sym))
-            if card_symbol_to_string(sym) == self.cmd_args[self.SYM_LOC]:
-                card_sym = sym
-        if card_sym is None:
-            raise ValueError(self.cmd_args[self.SYM_LOC] + " is not a card symbol")
+            card_num = self.cmd_args[self.NUM_LOCATION]
+        except IndexError:
+            raise TypeError("First argument must be a card number")
+        if card_num not in str_nums_list:
+            raise TypeError("First argument must be a card number")
+        try:
+            card_sym = self.cmd_args[self.SYM_LOC]
+        except IndexError:
+            raise TypeError("Second argument must be a card symbol")
+        sym_list = [s for s in CardSymbol]
+        str_sym_list = [card_symbol_to_string(c) for c in sym_list]
+        if card_sym not in str_sym_list:
+            raise TypeError("Second argument must be a card symbol")
         else:
-            return Card(card_num, card_sym)
+            for card in wist_game.cards_pile:
+                if card_num_to_string(card.num) == card_num and card_symbol_to_string(card.symbol) == card_sym:
+                    return card
 
 
 class ShowTrump(Cmd):
     CMD_NAME = 'trump'
+
     def __init__(self):
         Cmd.__init__(self, self.CMD_NAME)
 
     def execute(self, wist_game, cmd_line):
-        cmd_line.print_console(wist_game.trump_symbol)
+        cmd_line.print_console(card_symbol_to_string(wist_game.trump_symbol))
 
 
 class ShowTrumpTable(Cmd):
@@ -161,4 +166,6 @@ class ShowHelp(Cmd):
 
 
 def card_to_str(card):
-    return(card_num_to_string(card.num) + card_symbol_to_string(card.symbol))
+    if card is None:
+        return str(None)
+    return card_num_to_string(card.num) + card_symbol_to_string(card.symbol)

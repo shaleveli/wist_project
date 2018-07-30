@@ -33,6 +33,8 @@ class WistGame(Game):
     scores = None  # type: [int]
     # At the end of the game, contains the scores of each player
     ended_game = None  # type: bool
+    # Contains all the card in the game
+    cards_pile = None  # type: [Card]
 
     def __init__(self):
         self.game_mode = WistGameMode.TRUMP_BIDDING
@@ -52,14 +54,14 @@ class WistGame(Game):
         self.current_round_cards = self.PLAYERS_NUMBER * [None]
 
     def divide_cards(self):
-        cards_pile = []
+        self.cards_pile = []
         for symbol in CardSymbol:
             for num in CardNum:
                 if num != CardNum.JOKER:
-                    cards_pile.append(Card(num, symbol))
-        shuffle(cards_pile)
+                    self.cards_pile.append(Card(num, symbol))
+        shuffle(self.cards_pile)
         for i in range(self.PLAYERS_NUMBER):
-            self.players[i].set_cards(set(cards_pile[i*self.CARDS_IN_HAND:(i+1)*self.CARDS_IN_HAND]))
+            self.players[i].set_cards(set(self.cards_pile[i*self.CARDS_IN_HAND:(i+1)*self.CARDS_IN_HAND]))
 
     def end_of_trump_bidding(self):
         cnt_passed = 0
@@ -175,6 +177,8 @@ class WistGame(Game):
     def regular_turn(self, card_from_hand):
         if self.game_mode != WistGameMode.GAME:
             raise ValueError("not in game mode")
+        if card_from_hand not in self.players[self.active_player_idx].cards:
+            raise ValueError("Card is not legal")
         if self.beginning_of_regular_turn():
             self.lead_card = card_from_hand
             self.game_round = self.game_round + 1

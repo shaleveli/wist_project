@@ -17,6 +17,27 @@ class Card:
             self.symbol = card_symbol
             self.color = color_of_symbol(card_symbol)
 
+    def __lt__(self, other):
+        if self.symbol == other.symbol:
+            if self.num.value < other.num.value:
+                return True
+            else:
+                return False
+        elif self.symbol == CardSymbol.SPADE:
+            return False
+        elif self.symbol == CardSymbol.HEART:
+            if other.symbol == CardSymbol.SPADE:
+                return True
+            else:
+                return False
+        elif self.symbol == CardSymbol.DIAMOND:
+            if other.symbol == CardSymbol.SPADE or other.symbol == CardSymbol.HEART:
+                return True
+            else:
+                return False
+        else:
+            return True
+
 
 class CardNum(Enum):
     TWO = 2

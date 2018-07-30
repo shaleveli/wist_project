@@ -19,8 +19,9 @@ class CmdLine:
         try:
             cmd_obj = Cmd(self.in_str)
             return cmd_obj.execute(self.wist_game, self)
-        except (ValueError,TypeError) as e:
-            self.print_console(e)
+        except (ValueError, TypeError) as e:
+            if str(e):
+                self.print_console(e)
 
     def print_array(self, array):
         str_to_print = ' '.join(array)
