@@ -38,6 +38,9 @@ class Card:
         else:
             return True
 
+    def __str__(self):
+        return card_num_to_string(self.num) + card_symbol_to_string(self.symbol)
+
 
 class CardNum(Enum):
     TWO = 2

@@ -20,7 +20,7 @@ class WistPlayer(Player):
 
     def update(self, game):
         if self.known_info is None:
-            self.known_info = KnownInfo(game)
+            self.known_info = KnownInfo(game, self.idx)
         else:
             self.known_info.update(game)
 
@@ -55,7 +55,7 @@ class WistPlayer(Player):
 class KnownInfo:
     # Contains all the information that the AI player has about the current game.
     # This known information can be taken into account in the AI strategies.
-    idx = None  # type: int
+    active_player_idx = None  # type: int
     hand_cards = None  # type: [card]
     trump_symbol = None  # type: CardSymbol
     PLAYERS_NUMBER = 4
@@ -75,8 +75,10 @@ class KnownInfo:
     cards_pile = None  # type: [Card]
     unseen_cards = None  # type: [Card]
     seen_cards = None  # type: [Card]
+    idx = None  # type: int
 
-    def __init__(self, game):  # initializes known information for the current active player
+    def __init__(self, game, idx):  # initializes known information for the current active player
+        self.idx = idx
         self.update(game)
 
     def update(self, game):
@@ -92,7 +94,7 @@ class KnownInfo:
         self.current_round_cards = game.current_round_cards
         self.lead_card = game.lead_card
         self.takers_history = game.takers_history
-        self.idx = game.active_player_idx
+        self.active_player_idx = game.active_player_idx  # change imdiatly!!
         self.hand_cards = sorted(list(game.players[self.idx].cards))
         self.game_mode = game.game_mode
         self.cards_pile = game.cards_pile

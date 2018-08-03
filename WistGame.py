@@ -200,8 +200,12 @@ class WistGame(Game):
             return
         self.update_turn()
 
+    def update_player_info(self):
+        for i in range(self.PLAYERS_NUMBER):
+            self.players[i].update(self)
+
     def turn(self, *args):
-        self.players[self.active_player_idx].update()
+        self.update_player_info()
         if self.game_mode == WistGameMode.TRUMP_BIDDING:
             self.trump_bidding_turn(*args)
         elif self.game_mode == WistGameMode.CONTRACT_BIDDING:
@@ -229,17 +233,19 @@ class WistGame(Game):
             for i in range(players_num):
                 self.players.append(WistPlayer(i))
 
-    def compare_cards(self, card1, card2):
-        """returns whether card1 is bigger than card2. The default is False"""
+    def compare_cards(self, card1, card2, lead_card=None):
+        """returns whether card1 is bigger than card2. The default is False. add lead card option for AI testing"""
+        if self.lead_card is not None:
+            lead_card = self.lead_card
         if card1.symbol == card2.symbol:
             return card1.num.value > card2.num.value
         elif card1.symbol == self.trump_symbol:
             return True
         elif card2.symbol == self.trump_symbol:
             return False
-        elif card1.symbol == self.lead_card.symbol:
+        elif card1.symbol == lead_card.symbol:
             return True
-        elif card2.symbol == self.lead_card.symbol:
+        elif card2.symbol == lead_card.symbol:
             return False
         else:
             return False
