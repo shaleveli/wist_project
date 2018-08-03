@@ -33,8 +33,8 @@ class WistGame(Game):
     scores = None  # type: [int]
     # At the end of the game, contains the scores of each player
     ended_game = None  # type: bool
-    # Contains all the card in the game
     cards_pile = None  # type: [Card]
+    # Contains all the card in the game
 
     def __init__(self):
         self.game_mode = WistGameMode.TRUMP_BIDDING
@@ -201,6 +201,7 @@ class WistGame(Game):
         self.update_turn()
 
     def turn(self, *args):
+        self.players[self.active_player_idx].update()
         if self.game_mode == WistGameMode.TRUMP_BIDDING:
             self.trump_bidding_turn(*args)
         elif self.game_mode == WistGameMode.CONTRACT_BIDDING:
@@ -223,10 +224,10 @@ class WistGame(Game):
                 raise ValueError("players_names length must be players_num")
             else:
                 for i in range(players_num):
-                    self.players.append(WistPlayer(players_names[i]))
+                    self.players.append(WistPlayer(i, players_names[i]))
         else:
             for i in range(players_num):
-                self.players.append(WistPlayer())
+                self.players.append(WistPlayer(i))
 
     def compare_cards(self, card1, card2):
         """returns whether card1 is bigger than card2. The default is False"""

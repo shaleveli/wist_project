@@ -4,17 +4,25 @@ from WistGame import *
 
 
 class WistPlayer(Player):
-    contract = None  # type:int
-    trump_contract = None  # type:WistContract
-    passed = None  # type:bool
-    taken_cards_pack = None  # type:set(Card)
-    taken_rounds = None  # type:int
+    contract = None  # type: int
+    trump_contract = None  # type: WistContract
+    passed = None  # type: bool
+    taken_cards_pack = None  # type: set(Card)
+    taken_rounds = None  # type: int
+    known_info = None  # type: KnownInfo
+    idx = None  # type: int
 
-    def __init__(self, name=None):
+    def __init__(self, idx, name=None):
         Player.__init__(self, name)
         self.taken_rounds = 0
         self.taken_cards_pack = set()
-        pass
+        self.idx = idx
+
+    def update(self, game):
+        if self.known_info is None:
+            self.known_info = KnownInfo(game)
+        else:
+            self.known_info.update(game)
 
     def announced_contract(self):
         if self.contract is None:
@@ -42,3 +50,60 @@ class WistPlayer(Player):
     def win_turn(self, round_cards):
         self.taken_cards_pack = self.taken_cards_pack.union(round_cards)
         self.taken_rounds = self.taken_rounds + 1
+
+
+class KnownInfo:
+    # Contains all the information that the AI player has about the current game.
+    # This known information can be taken into account in the AI strategies.
+    idx = None  # type: int
+    hand_cards = None  # type: [card]
+    trump_symbol = None  # type: CardSymbol
+    PLAYERS_NUMBER = 4
+    CARDS_IN_HAND = 13
+    trump_bidding_round = None
+    highest_bidding_contract = None
+    trump_bidding_table = None
+    contracts_sum = None
+    is_under_game = None  # type: bool
+    game_round = None
+    current_round_cards = None
+    lead_card = None
+    takers_history = None
+    players_contracts = None  # type: [WistContract]
+    players_taken_cards = None  # type: [[Card]]
+    game_mode = None  # type: WistGameMode
+    cards_pile = None  # type: [Card]
+    unseen_cards = None  # type: [Card]
+    seen_cards = None  # type: [Card]
+
+    def __init__(self, game):  # initializes known information for the current active player
+        self.update(game)
+
+    def update(self, game):
+        self.trump_symbol = game.trump_symbol
+        self.PLAYERS_NUMBER = game.PLAYERS_NUMBER
+        self.CARDS_IN_HAND = game.CARDS_IN_HAND
+        self.trump_bidding_round = game.trump_bidding_round
+        self.highest_bidding_contract = game.highest_bidding_contract
+        self.trump_bidding_table = game.trump_bidding_table
+        self.contracts_sum = game.contracts_sum
+        self.is_under_game = game.is_under_game
+        self.game_round = game.game_round
+        self.current_round_cards = game.current_round_cards
+        self.lead_card = game.lead_card
+        self.takers_history = game.takers_history
+        self.idx = game.active_player_idx
+        self.hand_cards = sorted(list(game.players[self.idx].cards))
+        self.game_mode = game.game_mode
+        self.cards_pile = game.cards_pile
+        self.players_taken_cards = []
+        self.players_contracts = []
+        self.seen_cards = self.hand_cards
+        for i in range(0, self.PLAYERS_NUMBER):
+            self.players_taken_cards.append(list(game.players[i].taken_cards_pack))
+            self.players_contracts.append(game.players[i].contract)
+            self.seen_cards = self.seen_cards + list(game.players[i].taken_cards_pack)
+        self.unseen_cards = [c for c in self.cards_pile if c not in (self.seen_cards + self.current_round_cards)]
+        # unseen cards are the cards that might be in the other players hands
+        self.seen_cards = sorted(self.seen_cards)
+        self.unseen_cards = sorted(self.unseen_cards)
