@@ -76,10 +76,15 @@ class KnownInfo:
     unseen_cards = None  # type: [Card]
     seen_cards = None  # type: [Card]
     idx = None  # type: int
+    player_symbol_list = None  # type: [{CardSymbol:bool}]
+    #list of dictionary that stores if each player have specific symboll
 
     def __init__(self, game, idx):  # initializes known information for the current active player
         self.idx = idx
         self.update(game)
+        for idx in self.PLAYERS_NUMBER:
+            for sym in CardSymbol:
+                self.player_symbol_list[idx][sym] = True
 
     def update(self, game):
         self.trump_symbol = game.trump_symbol
@@ -109,3 +114,10 @@ class KnownInfo:
         # unseen cards are the cards that might be in the other players hands
         self.seen_cards = sorted(self.seen_cards)
         self.unseen_cards = sorted(self.unseen_cards)
+
+        # Check if players dosent have a symbol
+        if self.lead_card is not None:
+            for idx in self.PLAYERS_NUMBER:
+                if self.current_round_cards[idx].symbol != self.lead_card.symbol:
+                    self.player_symbol_list[idx][self.lead_card.symbol] = False
+

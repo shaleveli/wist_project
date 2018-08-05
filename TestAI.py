@@ -20,7 +20,7 @@ class HumanAI(WistAI):
 
     def card_win_prob(self, card):
         """equal disterbution assumption. winning card devided equally between the players.
-         and every player chose by random"""
+         and every player choose by random"""
         no_card_players = 0
         for c in self.info.current_round_cards:
             if c is None:
@@ -33,6 +33,12 @@ class HumanAI(WistAI):
         print(str(card) + " win card num: " + str(win_card_num))
         cards_in_hand = self.info.CARDS_IN_HAND - self.info.game_round + 1
 
+        if no_card_players == 0:  # if the player is the last one in the round
+            if self.card_win(card, self.info.current_round_cards):
+                prob = 1
+            else:
+                prob = 0
+            return prob
         prob = (1 - win_card_num/(no_card_players * cards_in_hand))**no_card_players
         if not self.card_win(card, self.info.current_round_cards):
             prob = 0

@@ -248,6 +248,7 @@ class WistGame(Game):
         elif card2.symbol == lead_card.symbol:
             return False
         else:
+            print('not good loc')
             return False
 
     def winning_player_in_round(self):

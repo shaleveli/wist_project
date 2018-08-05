@@ -21,9 +21,6 @@ while 1:
             AI = HumanAI(wist_game)
             if wist_game.game_mode == WistGameMode.GAME:
                 print('wistP: ' + str(wist_game.active_player_idx))
-                try:
-                    AI.card_prob_list()
-                except:
-                    pass
+                AI.card_prob_list()
         except ValueError as err:
             cmdl.print_console(err)
