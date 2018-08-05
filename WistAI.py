@@ -8,7 +8,7 @@ class WistAI:
     """the following are FUNCTIONS with a KnownInfo argument
     that return what the AI does in such a situation"""
     player = None  # type:WistPlayer
-    game = None  # ftype:WistGame
+    game = None  # type:WistGame
     info = None  # type:KnownInfo
     #game_copy = None  # type:WistGame
 

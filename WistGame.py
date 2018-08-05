@@ -212,6 +212,7 @@ class WistGame(Game):
             self.contract_bidding_turn(*args)
         elif self.game_mode == WistGameMode.GAME:
             self.regular_turn(*args)
+        self.update_player_info()
 
     def update_turn(self, player_idx=None):
         self.players[self.active_player_idx].turn = False
@@ -248,7 +249,7 @@ class WistGame(Game):
         elif card2.symbol == lead_card.symbol:
             return False
         else:
-            print('not good loc')
+            #print('not good loc')
             return False
 
     def winning_player_in_round(self):

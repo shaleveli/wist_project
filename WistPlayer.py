@@ -40,9 +40,11 @@ class WistPlayer(Player):
             legal_cards = self.cards
         return legal_cards
 
-    def cards_in_symbol(self, symbol):
+    def cards_in_symbol(self, symbol, cards=None):
+        if cards is None:
+            cards = self.cards
         card_set = set()
-        for card in self.cards:
+        for card in cards:
             if card.symbol == symbol:
                 card_set.add(card)
         return card_set
@@ -81,10 +83,12 @@ class KnownInfo:
 
     def __init__(self, game, idx):  # initializes known information for the current active player
         self.idx = idx
-        self.update(game)
-        for idx in self.PLAYERS_NUMBER:
+        self.player_symbol_list = self.PLAYERS_NUMBER * [None]
+        for idx in range(self.PLAYERS_NUMBER):
+            self.player_symbol_list[idx] = {}
             for sym in CardSymbol:
                 self.player_symbol_list[idx][sym] = True
+        self.update(game)
 
     def update(self, game):
         self.trump_symbol = game.trump_symbol
@@ -117,7 +121,8 @@ class KnownInfo:
 
         # Check if players dosent have a symbol
         if self.lead_card is not None:
-            for idx in self.PLAYERS_NUMBER:
-                if self.current_round_cards[idx].symbol != self.lead_card.symbol:
-                    self.player_symbol_list[idx][self.lead_card.symbol] = False
+            for idx in range(self.PLAYERS_NUMBER):
+                if self.current_round_cards[idx] is not None:
+                    if self.current_round_cards[idx].symbol != self.lead_card.symbol:
+                        self.player_symbol_list[idx][self.lead_card.symbol] = False
 
