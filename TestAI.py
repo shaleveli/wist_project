@@ -1,3 +1,4 @@
+
 from WistAI import WistAI
 
 
@@ -85,7 +86,7 @@ class HumanAI(WistAI):
                 win_players_cards[idx] = 0
         return legal_players_cards, win_players_cards
 
-    def card_win_prob(self, card):
+    def card_win_prob_rand(self, card):
         """equal disterbution assumption. winning card devided equally between the players.
          and every player choose by random"""
         no_card_players = 0
@@ -99,15 +100,20 @@ class HumanAI(WistAI):
             else:
                 prob = 0
             return prob
-        print(str(card) + ' ' + str(self.legal_winner_cards(card, card)))
+        legal, win = self.legal_winner_cards(card, card)
+        prob = 1
+        for idx in range(self.info.PLAYERS_NUMBER):
+            if legal[idx] is not None:
+                prob = prob * (1 - win[idx] / legal[idx])
         if not self.card_win(card, self.info.current_round_cards):
             prob = 0
-        #return prob
+        return prob
 
     def card_prob_list(self):
         ls = []
         for c in sorted(list(self.player.legal_play(self.info.lead_card))):
-            ls.append(self.card_win_prob(c))
+            ls.append(self.card_win_prob_rand(c))
+            print(str(c) + ' ' + str(self.card_win_prob_rand(c)))
         #print(ls)
 
     def __trump_bidding_strategy(self):
