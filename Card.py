@@ -17,6 +17,12 @@ class Card:
             self.symbol = card_symbol
             self.color = color_of_symbol(card_symbol)
 
+    def same(self, other):
+        if self.num == other.num and self.symbol == other.symbol and self.color == other.color:
+            return True
+        else:
+            return False
+
     def __lt__(self, other):
         if self.symbol == other.symbol:
             if self.num.value < other.num.value:

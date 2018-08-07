@@ -35,10 +35,12 @@ class WistGame(Game):
     ended_game = None  # type: bool
     cards_pile = None  # type: [Card]
     # Contains all the card in the game
+    debug = None  # type: bool
 
-    def __init__(self):
+    def __init__(self, debug=False):
         self.game_mode = WistGameMode.TRUMP_BIDDING
         Game.__init__(self, self.PLAYERS_NUMBER)
+        self.debug = debug
         self.active_player_idx = 0
         self.divide_cards()
         self.declared_contract = 0
@@ -59,7 +61,8 @@ class WistGame(Game):
             for num in CardNum:
                 if num != CardNum.JOKER:
                     self.cards_pile.append(Card(num, symbol))
-        shuffle(self.cards_pile)
+        if not self.debug:
+            shuffle(self.cards_pile)
         for i in range(self.PLAYERS_NUMBER):
             self.players[i].set_cards(set(self.cards_pile[i*self.CARDS_IN_HAND:(i+1)*self.CARDS_IN_HAND]))
 
@@ -115,6 +118,34 @@ class WistGame(Game):
                     self.scores[i] = -10*abs(self.players[i].taken_rounds - contract)
                 else:
                     self.scores[i] = -60 + 10*self.players[i].taken_rounds
+
+    def update_winners_and_scores(self):
+        """Updates the lists winners and scores
+        assuming the game was ended."""
+        for i in range(self.PLAYERS_NUMBER):
+            contract = self.players[i].contract
+            taken_rounds = self.players[i].taken_rounds
+            score = self.contract_score(contract, taken_rounds)
+            self.scores[i] = score
+            if score > 0:
+                self.winners[i] = True
+
+    def contract_score(self, contract, taken_rounds):
+        if taken_rounds == contract:
+            if contract != 0:
+                score = 10 + contract * contract
+            # succeeded a contract of 0
+            else:
+                if self.is_under_game:
+                    score = 50
+                else:  # over game
+                    score = 25
+        else:
+            if contract != 0:
+                score = -10 * abs(taken_rounds - contract)
+            else:
+                score = -60 + 10 * taken_rounds
+        return score
 
     def trump_bidding_turn(self, bidding_contract):
         if self.game_mode != WistGameMode.TRUMP_BIDDING:
@@ -195,6 +226,7 @@ class WistGame(Game):
             if self.game_round == self.CARDS_IN_HAND:
                 self.update_winners_and_scores()
                 self.ended_game = True
+                self.game_mode = WistGameMode.END
             else:
                 self.update_turn(win_player_idx)
             return
@@ -262,11 +294,15 @@ class WistGame(Game):
     def active_player_hand(self):
         return self.players[self.active_player_idx].cards
 
+    def active_player(self):
+        return self.players[self.active_player_idx]
+
 
 class WistGameMode(Enum):
     TRUMP_BIDDING = 1
     CONTRACT_BIDDING = 2
     GAME = 3
+    END = 4
 
 
 class WistContract:

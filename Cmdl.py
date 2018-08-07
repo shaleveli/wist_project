@@ -10,8 +10,11 @@ class CmdLine:
         self.wist_game = wist_game
         pass
 
-    def read_console(self):
-        self.in_str = input('')
+    def read_console(self, debug_str=None):
+        if debug_str is None:
+            self.in_str = input('')
+        else:
+            self.in_str = debug_str
         return self.exec_line()
 
     def exec_line(self):
