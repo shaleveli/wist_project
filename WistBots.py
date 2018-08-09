@@ -10,11 +10,11 @@ class MaxNAI(WistAI):
         WistAI.__init__(self, game, player)
         self.data_type = dat
 
-    def game_strategy(self, round_num):
+    def game_strategy(self, round_num, version):
         CARD_LOC = 1
-        output = Tree.opt_card_h(round_num, self.data_type(self.game), self.player.idx)
+        output = Tree.opt_card_h(round_num, self.data_type(self.game, None, version), self.player.idx)
         card = output[CARD_LOC]
-        return card
+        return output
 
 
 class RandomAI(WistAI):
@@ -23,6 +23,6 @@ class RandomAI(WistAI):
         WistAI.__init__(self, game, player)
 
     def game_strategy(self):
-        card_list = sorted(list(self.game.active_player().legal_play(self.game.lead_card)))
+        card_list = self.game.active_player().legal_play(self.game.lead_card)
         rand = random.SystemRandom()
         return rand.choice(card_list)

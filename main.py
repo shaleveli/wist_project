@@ -4,8 +4,11 @@ from Cmdl import CmdLine
 from Commands import *
 from TestAI import HumanAI
 from WistBots import *
+import cProfile
 
+#
 wist_game = WistGame(False)
+
 cmdl = CmdLine(wist_game)
 
 # debugging CMD
@@ -26,15 +29,21 @@ while 1:
             AI = HumanAI(wist_game)
             if wist_game.game_mode == WistGameMode.GAME:
                 print('wistP: ' + str(wist_game.active_player_idx))
+
                 MAX_ROUNDS = 2
                 # calculates which card to put for each player
 
                 # MAXN AI
-                a = MaxNAI(wist_game, wist_game.active_player()).game_strategy(MAX_ROUNDS)
+                prof = cProfile.run('MaxNAI(wist_game, wist_game.active_player()).game_strategy(MAX_ROUNDS, 1)')
+                #cProfile.run('MaxNAI(wist_game, wist_game.active_player()).game_strategy(MAX_ROUNDS, 0)')
+                ha, a = MaxNAI(wist_game, wist_game.active_player()).game_strategy(MAX_ROUNDS, 1)
                 # Random AI
-                b = RandomAI(wist_game, wist_game.active_player()).game_strategy()
+                #print('---------------------------------------------------------------')
+                #hb, b = MaxNAI(wist_game, wist_game.active_player()).game_strategy(MAX_ROUNDS, 0)
                 print(a)
-                print(b)
+                print(ha)
+                #print(a, b)
+                #print(ha, hb)
 
         except ValueError as err:
             cmdl.print_console(err)

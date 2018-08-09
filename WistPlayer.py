@@ -7,7 +7,7 @@ class WistPlayer(Player):
     contract = None  # type: int
     trump_contract = None  # type: WistContract
     passed = None  # type: bool
-    taken_cards_pack = None  # type: set(Card)
+    taken_cards_pack = None  # type: [Card]
     taken_rounds = None  # type: int
     known_info = None  # type: KnownInfo
     idx = None  # type: int
@@ -15,7 +15,7 @@ class WistPlayer(Player):
     def __init__(self, idx, name=None):
         Player.__init__(self, name)
         self.taken_rounds = 0
-        self.taken_cards_pack = set()
+        self.taken_cards_pack = []
         self.idx = idx
 
     def update(self, game):
@@ -34,24 +34,32 @@ class WistPlayer(Player):
         """"returns a set of legal play cards.
         lead card is the 1st card in the round or NONE if the player is 1st"""
         if lead_card is None:
-            return self.cards
+            legal_cards = self.cards[:]
+            return legal_cards
         legal_cards = self.cards_in_symbol(lead_card.symbol)
         if len(legal_cards) == 0:
-            legal_cards = self.cards
+            legal_cards = self.cards[:]
         return legal_cards
 
     def cards_in_symbol(self, symbol, cards=None):
         if cards is None:
             cards = self.cards
-        card_set = set()
+        card_list = []
         for card in cards:
             if card.symbol == symbol:
-                card_set.add(card)
-        return card_set
+                card_list.append(card)
+        return card_list
 
     def win_turn(self, round_cards):
-        self.taken_cards_pack = self.taken_cards_pack.union(round_cards)
+        self.taken_cards_pack = self.taken_cards_pack + round_cards
         self.taken_rounds = self.taken_rounds + 1
+
+    def reverse_win_turn(self, cards_to_pop):
+        """gets the number cards of round, suppouse to be PLAYERS_NUMBER"""
+        self.taken_rounds = self.taken_rounds - 1
+        last_won_cards = self.taken_cards_pack[-cards_to_pop:]
+        self.taken_cards_pack = self.taken_cards_pack[:-cards_to_pop] # pop the last cards
+        return last_won_cards
 
 
 class KnownInfo:
@@ -104,20 +112,20 @@ class KnownInfo:
         self.lead_card = game.lead_card
         self.takers_history = game.takers_history
         self.active_player_idx = game.active_player_idx  # change imdiatly!!
-        self.hand_cards = sorted(list(game.players[self.idx].cards))
+        self.hand_cards = game.players[self.idx].cards
         self.game_mode = game.game_mode
         self.cards_pile = game.cards_pile
         self.players_taken_cards = []
         self.players_contracts = []
         self.seen_cards = self.hand_cards
         for i in range(0, self.PLAYERS_NUMBER):
-            self.players_taken_cards.append(list(game.players[i].taken_cards_pack))
+            self.players_taken_cards.append(game.players[i].taken_cards_pack)
             self.players_contracts.append(game.players[i].contract)
-            self.seen_cards = self.seen_cards + list(game.players[i].taken_cards_pack)
+            self.seen_cards = self.seen_cards + game.players[i].taken_cards_pack
         self.unseen_cards = [c for c in self.cards_pile if c not in (self.seen_cards + self.current_round_cards)]
         # unseen cards are the cards that might be in the other players hands
-        self.seen_cards = sorted(self.seen_cards)
-        self.unseen_cards = sorted(self.unseen_cards)
+        self.seen_cards = self.seen_cards
+        self.unseen_cards = self.unseen_cards
 
         # Check if players dosent have a symbol
         if self.lead_card is not None:

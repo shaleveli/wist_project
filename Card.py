@@ -6,6 +6,8 @@ class Card:
     num = None  # type: CardNum
     symbol = None  # type: CardSymbol
     color = None  # type: Color
+    # indicates the card integer
+    value = None  # type: int
 
     def __init__(self, card_num, card_symbol=None):
         if card_num is None:
@@ -16,6 +18,7 @@ class Card:
             self.num = card_num
             self.symbol = card_symbol
             self.color = color_of_symbol(card_symbol)
+            self.value = card_num.value
 
     def same(self, other):
         if self.num == other.num and self.symbol == other.symbol and self.color == other.color:
@@ -23,9 +26,16 @@ class Card:
         else:
             return False
 
+    def card_in_list(self, card_list):
+        for card in card_list:
+            if self.same(card):
+                return card
+        else:
+            return None
+
     def __lt__(self, other):
         if self.symbol == other.symbol:
-            if self.num.value < other.num.value:
+            if self.value < other.value:
                 return True
             else:
                 return False

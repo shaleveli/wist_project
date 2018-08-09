@@ -2,6 +2,17 @@ from Cmdl import *
 from WistGame import *
 
 
+class Reverse(Cmd):
+    CMD_NAME = "r"
+
+    def __init__(self):
+        Cmd.__init__(self, self.CMD_NAME)
+
+    def execute(self, wist_game, cmd_line):
+        if wist_game.game_mode != WistGameMode.GAME: # not game mode
+            raise ValueError("r command can be used only in game mode")
+        wist_game.reverse_regular_turn()
+
 class ShowHandCards(Cmd):
     CMD_NAME = 'hand'
 
