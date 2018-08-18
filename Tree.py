@@ -1,7 +1,8 @@
 from WistGame import *
 from Card import *
 import copy
-import timeit
+import Heuristics
+import random
 
 class TreeData:
     """general type of tree, can be used in all trees with huristic"""
@@ -48,6 +49,10 @@ class TreeData:
             else:
                 return False
 
+    def children_cards(self):
+        legal_player_cards = self.game.active_player().legal_play(self.game.lead_card)
+        return legal_player_cards
+
     def children_len(self):
         legal_player_cards = self.game.active_player().legal_play(self.game.lead_card)
         return len(legal_player_cards)
@@ -57,23 +62,30 @@ class TreeData:
             return self.children_v0()
         elif self.version == 1:
             return self.children_v1()
-    """
-    def get_child(self, idx):
-        if self.version == 0:
-            if self.child_list is None:
-                self.children_v0()
-            return self.child_list[idx]
-        if self.version == 1:
-            legal_player_cards = self.game.active_player().legal_play(self.game.lead_card)
-            self.game.turn()
-            return self.__class__(self.game, legal_player_cards[idx], self.version)
-    """
+
+    # If cards are sorted its bad
     def children_v1(self):
         legal_player_cards = self.game.active_player().legal_play(self.game.lead_card)
+        #random.shuffle(legal_player_cards)
+        #legal_player_cards = self.sequences_pruning()
         for card in legal_player_cards:
             self.game.turn(card)
             yield self.__class__(self.game, card, self.version)
             self.game.reverse_regular_turn()
+
+    def sequences_pruning(self):
+        """ prun cards in sequences beacuse its actually the same"""
+        legal_player_cards = self.game.active_player().legal_play(self.game.lead_card)
+        legal_player_cards = sorted(legal_player_cards)
+        idx = 0
+        while idx < len(legal_player_cards) - 1:
+            if self.game.similar_cards(legal_player_cards[idx], legal_player_cards[idx + 1]):
+                #print('similar: ' + str(legal_player_cards[idx]) + str(legal_player_cards[idx + 1]))
+                legal_player_cards.remove(legal_player_cards[idx])
+            else:
+                idx = idx + 1
+        # random.shuffle(legal_player_cards)
+        return legal_player_cards
 
     def children_v0(self):
         """return a list of all possible data that proceeds the game"""
@@ -100,13 +112,19 @@ class TreeData:
 
 class ScoreH(TreeData):
     """specific TreeData that uses Score as Huristic"""
+    min_h_val = None
+    tot_h_sum = None
+
     def __init__(self, game, card=None, version=0):
         TreeData.__init__(self, game, card, version)
 
-    def h_calc(self, idx, *args):
+    def h_calc(self, idx, contract=None, *args):
+        """option to add your contract"""
         player = self.game.players[idx]
+        if contract is None:
+            contract = player.contract
         approx_rounds = player.taken_rounds + self.approx_rounds(idx)
-        return self.game.contract_score(player.contract, approx_rounds)
+        return self.game.contract_score(contract, approx_rounds)
 
     def approx_rounds(self, idx):
         raise NotImplementedError
@@ -119,17 +137,9 @@ class SimpleH(ScoreH):
 
     def approx_rounds(self, idx):
         cards = self.game.players[idx].cards
-        rounds = 0
-        for c in cards:
-            if c.symbol == self.game.trump_symbol:
-                TEN_CARD_VALUE = 10
-                if c.value > TEN_CARD_VALUE:
-                    rounds = rounds + 1
-            else:
-                Q_CARD_VALUE = 12
-                if c.value > Q_CARD_VALUE:
-                    rounds = rounds + 1
-        return rounds
+        trump_symbol = self.game.trump_symbol
+        return Heuristics.approx_rounds_simple(cards, trump_symbol)
+
 
 class NoH(ScoreH):
     def __init__(self, game, card=None, version=0):
@@ -140,8 +150,63 @@ class NoH(ScoreH):
 
 
 # MaxN algorithm
-
 def opt_card_h(max_round, data, player_idx):
+    """gets 3 parameters: max_round the maximal rounds;
+    data:input of type TreeData;
+    player_idx the idx of the player that plays
+    the functions return (leaf_huristic, last dropped card)
+    """
+
+    # if data is a leaf - END of the game
+    if not data.has_children():
+        tmp = data.h, data.last_dropped_card
+        del data
+        return tmp
+
+    # if its the tree top and we have only one child
+    if data.tree_top() and data.children_len() == 1:
+        tmp = None, data.children_cards()[0]
+        del data
+        return tmp
+
+    # if a round just ended - we now can calculate a new estimation of h
+    if data.game.beginning_of_regular_turn() and not data.tree_top():
+        max_round = max_round - 1
+
+    # if we arrived max iterations we return the last h
+    if max_round == 0:
+        tmp = data.h[:], data.last_dropped_card
+        del data
+        return tmp
+
+    # if the current play is done by our player - we can filter branches by prediction
+    if data.game.active_player_idx == player_idx:
+        children = data.filtered_children()
+    # else we do nothing
+    else:
+        children = data.children()
+
+    max_h = None
+    max_last_card = None
+    active_player_idx = data.game.active_player_idx
+    # Cant use game inside here! its changing!!
+    for child in children:
+        #print(child)
+        # calculate the child h
+        h, last_card = opt_card_h(max_round, child, player_idx)
+        if max_h is None:
+            max_h = h
+            max_last_card = child.last_dropped_card
+            continue
+        # if we found new h the maximize current player h
+        if h[active_player_idx] > max_h[active_player_idx]:
+            max_h = h
+            max_last_card = child.last_dropped_card
+    del children
+    return max_h, max_last_card
+
+
+def opt_card_h_shallow_pu(max_round, data, player_idx):
     """gets 3 parameters: max_round the maximal rounds;
     data:input of type TreeData;
     player_idx the idx of the player that plays
@@ -190,8 +255,6 @@ def opt_card_h(max_round, data, player_idx):
             max_last_card = child.last_dropped_card
     del children
     return max_h, max_last_card
-
-
 
 
 

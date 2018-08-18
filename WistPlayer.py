@@ -36,7 +36,7 @@ class WistPlayer(Player):
         if lead_card is None:
             legal_cards = self.cards[:]
             return legal_cards
-        legal_cards = self.cards_in_symbol(lead_card.symbol)
+        legal_cards = self.cards_in_symbol(lead_card.symbol)[:]
         if len(legal_cards) == 0:
             legal_cards = self.cards[:]
         return legal_cards

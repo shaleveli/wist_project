@@ -40,6 +40,7 @@ class WistGame(Game):
     real_game = None  # type: bool
     regular_turn_beginning = None  # type: bool
     turns_count = None  # type: int
+    players_turns_history = None  # type: [int]
 
     def __init__(self, real_game=True):
         self.game_mode = WistGameMode.TRUMP_BIDDING
@@ -62,6 +63,7 @@ class WistGame(Game):
         self.regular_turn_beginning = True
         self.regular_turn_ending = False
         self.turns_count = 0
+        self.players_turns_history = []
 
     def divide_cards(self):
         self.cards_pile = []
@@ -98,10 +100,20 @@ class WistGame(Game):
             return False
 
     def end_of_regular_turn(self):
-        return self.turns_count == 3
+        for card in self.current_round_cards:
+            if card is None:
+                return False
+        else:
+            return True
+        #return self.turns_count == 3
 
     def beginning_of_regular_turn(self):
-        return self.turns_count == 0
+        for card in self.current_round_cards:
+            if card is not None:
+                return False
+        else:
+            return True
+        #return self.turns_count == 0
 
     def update_winners_and_scores(self):
         """Updates the lists winners and scores
@@ -131,6 +143,19 @@ class WistGame(Game):
                 score = -60 + 10 * taken_rounds
         return score
 
+    def player_turn(self, rounds):
+        """returns that player that had turn in 2 rounds ago"""
+        try:
+            return self.players_turns_history[-rounds]
+        except IndexError:
+            raise ValueError
+
+    def trump_contract_legal(self, bidding_contract):
+        if not self.start_of_game and bidding_contract <= self.highest_bidding_contract:
+            return False
+        else:
+            return True
+
     def trump_bidding_turn(self, bidding_contract):
         if self.game_mode != WistGameMode.TRUMP_BIDDING:
             raise ValueError("not in trump bidding mode")
@@ -139,7 +164,7 @@ class WistGame(Game):
         if not bidding_contract.is_pass:
             if self.trump_bidding_round != 1 and self.players[self.active_player_idx].passed:  # not supposed to happen
                 raise ValueError("this player has already passed")
-            if not self.start_of_game and bidding_contract <= self.highest_bidding_contract:
+            if not self.trump_contract_legal(bidding_contract):
                 raise ValueError("bidding_contract must be higher then highest_bidding")
         if self.start_of_game:
             self.start_of_game = False
@@ -194,12 +219,13 @@ class WistGame(Game):
             raise ValueError("not in game mode")
         if card_from_hand not in self.players[self.active_player_idx].cards:
             raise ValueError("Card not in hand")
-        if self.regular_turn_beginning:
-            self.lead_card = card_from_hand
-            self.game_round = self.game_round + 1
-            self.regular_turn_beginning = False
         elif card_from_hand not in self.players[self.active_player_idx].legal_play(self.lead_card):
             raise ValueError("Card is not legal")
+        if self.beginning_of_regular_turn():
+            self.lead_card = card_from_hand
+            self.game_round = self.game_round + 1
+            #print("game round: " + str(self.game_round))
+            self.regular_turn_beginning = False
         self.players[self.active_player_idx].cards.remove(card_from_hand)
         self.current_round_cards[self.active_player_idx] = card_from_hand
         if self.end_of_regular_turn():
@@ -237,7 +263,8 @@ class WistGame(Game):
                 last_round_starter = 0
 
             self.lead_card = last_round_table[last_round_starter]  # the 1st card on the last round
-            last_turn_player_idx = (last_round_starter - 1) % self.PLAYERS_NUMBER  # the player who played on the last turn
+            last_turn_player_idx = self.players_turns_history[-1]  # the player who played on the last turn
+            self.players_turns_history = self.players_turns_history[:-1]
             last_turn_dropped_card = last_round_table[last_turn_player_idx]  # that card that this player dropped
             self.current_round_cards = last_round_table  # all 4 cards on the table
             self.current_round_cards[last_turn_player_idx] = None
@@ -253,6 +280,7 @@ class WistGame(Game):
             last_turn_dropped_card = self.current_round_cards[last_turn_player_idx]
             self.current_round_cards[last_turn_player_idx] = None
             if self.current_round_cards == 4*[None]:
+                #print('subbed')
                 self.lead_card = None
                 self.game_round = self.game_round - 1
 
@@ -268,6 +296,7 @@ class WistGame(Game):
             self.players[i].update(self)
 
     def turn(self, *args):
+        curr_player_idx = self.active_player_idx
         if self.real_game:
             self.update_player_info()
         if self.game_mode == WistGameMode.TRUMP_BIDDING:
@@ -278,6 +307,7 @@ class WistGame(Game):
             self.regular_turn(*args)
         if self.real_game:
             self.update_player_info()
+        self.players_turns_history.append(curr_player_idx)
         self.turns_count = (self.turns_count + 1) % self.PLAYERS_NUMBER
 
     def update_turn(self, player_idx=None):
@@ -330,6 +360,30 @@ class WistGame(Game):
 
     def active_player(self):
         return self.players[self.active_player_idx]
+
+    def dropped_cards(self):
+        cards_list = []
+        for player in self.players:
+            cards_list = cards_list + player.taken_cards_pack
+        return cards_list
+
+    def similar_cards(self, card1, card2):
+        """ check if cards are the same for each game- maybe better to sort it"""
+        if card1.symbol != card2.symbol:
+            return False  # maybe fix
+        else:
+            min_val = min(card1.value, card2.value)
+            max_val = max(card1.value, card2.value)
+            cards_in_symbol = self.players[self.active_player_idx].cards_in_symbol(card1.symbol, self.dropped_cards())
+            card_in_dropped_cards = False
+            for val in range(min_val + 1, max_val):
+                for card in cards_in_symbol:
+                    if val == card.value:
+                        card_in_dropped_cards = True
+                        break
+                if not card_in_dropped_cards:
+                    return False
+            return True
 
     def multi_turns(self, cards_list):
         for card in cards_list:

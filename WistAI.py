@@ -18,13 +18,13 @@ class WistAI:
 
     def output(self):
         "the only Public function of WistAI nevigates through its private functions"
-        self.info = self.player.known_info
-        if self.info.game_mode == WistGameMode.TRUMP_BIDDING:
-            self.__trump_bidding_strategy()
-        elif self.info.game_mode == WistGameMode.CONTRACT_BIDDING:
-            self.__contract_bidding_strategy()
-        else:
-            self.__game_strategy()
+        if self.game.game_mode == WistGameMode.TRUMP_BIDDING:
+
+            return self.trump_bidding_strategy()
+        elif self.game.game_mode == WistGameMode.CONTRACT_BIDDING:
+            return self.contract_bidding_strategy()
+        elif self.game.game_mode == WistGameMode.GAME:
+            return self.game_strategy()
 
     def trump_bidding_strategy(self, *args):
         raise NotImplementedError
