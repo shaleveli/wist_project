@@ -30,7 +30,7 @@ class WistPlayer(Player):
         else:
             return True
 
-    def legal_play(self, lead_card):
+    def legal_play(self, lead_card=None):
         """"returns a set of legal play cards.
         lead card is the 1st card in the round or NONE if the player is 1st"""
         if lead_card is None:

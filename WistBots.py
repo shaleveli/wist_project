@@ -44,7 +44,7 @@ class MaxNAI(NormHAI):
 
     def game_strategy(self, *args):
         CARD_LOC = 1
-        output = Tree.opt_card_h(self.round_num, self.data_type(self.game, None, self.version), self.player.idx)
+        output = Tree.opt_card_h(self.round_num, self.data_type(self.game), self.player.idx)
         card = output[CARD_LOC]
         return card
 

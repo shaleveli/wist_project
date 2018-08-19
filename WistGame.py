@@ -74,7 +74,7 @@ class WistGame(Game):
         if not self.debug:
             random.Random().shuffle(self.cards_pile)
         else:
-            SEED = 5
+            SEED = 9 # 9 is a fucking prob
             random.Random(SEED).shuffle(self.cards_pile)
         for i in range(self.PLAYERS_NUMBER):
             self.players[i].set_cards(self.cards_pile[i*self.CARDS_IN_HAND:(i+1)*self.CARDS_IN_HAND])
@@ -218,8 +218,14 @@ class WistGame(Game):
         if self.game_mode != WistGameMode.GAME:
             raise ValueError("not in game mode")
         if card_from_hand not in self.players[self.active_player_idx].cards:
+            print('here')
             raise ValueError("Card not in hand")
         elif card_from_hand not in self.players[self.active_player_idx].legal_play(self.lead_card):
+            print('sugg card:')
+            print(card_from_hand)
+            print('legal: ')
+            for card in self.players[self.active_player_idx].legal_play(self.lead_card):
+                print(card)
             raise ValueError("Card is not legal")
         if self.beginning_of_regular_turn():
             self.lead_card = card_from_hand
@@ -260,7 +266,8 @@ class WistGame(Game):
                 last_round_starter = self.takers_history[-1]
             # else the last round was the 1st round
             except IndexError:
-                last_round_starter = 0
+                # not true!!!!
+                last_round_starter = self.bidding_winner
 
             self.lead_card = last_round_table[last_round_starter]  # the 1st card on the last round
             last_turn_player_idx = self.players_turns_history[-1]  # the player who played on the last turn
@@ -276,7 +283,8 @@ class WistGame(Game):
                 self.winners = self.PLAYERS_NUMBER * [False]
                 self.scores = self.PLAYERS_NUMBER * [0]
         else:
-            last_turn_player_idx = (self.active_player_idx - 1) % self.PLAYERS_NUMBER
+            last_turn_player_idx = self.players_turns_history[-1]  # the player who played on the last turn
+            self.players_turns_history = self.players_turns_history[:-1]
             last_turn_dropped_card = self.current_round_cards[last_turn_player_idx]
             self.current_round_cards[last_turn_player_idx] = None
             if self.current_round_cards == 4*[None]:
