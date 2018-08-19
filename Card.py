@@ -8,6 +8,7 @@ class Card:
     color = None  # type: Color
     # indicates the card integer
     value = None  # type: int
+    symbol_value = None  # type: int
 
     def __init__(self, card_num, card_symbol=None):
         if card_num is None:
@@ -19,6 +20,7 @@ class Card:
             self.symbol = card_symbol
             self.color = color_of_symbol(card_symbol)
             self.value = card_num.value
+            self.symbol_value = card_symbol.value
 
     def same(self, other):
         if self.num == other.num and self.symbol == other.symbol and self.color == other.color:
@@ -107,10 +109,10 @@ def card_num_to_string(cardnum):
 
 
 class CardSymbol(Enum):
-    HEART = 1
-    CLUB = 2
-    SPADE = 3
-    DIAMOND = 4
+    HEART = 0
+    CLUB = 1
+    SPADE = 2
+    DIAMOND = 3
 
 
 def card_symbol_to_string(cardsym):

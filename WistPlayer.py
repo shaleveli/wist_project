@@ -53,6 +53,7 @@ class WistPlayer(Player):
     def win_turn(self, round_cards):
         self.taken_cards_pack = self.taken_cards_pack + round_cards
         self.taken_rounds = self.taken_rounds + 1
+        #print(self.taken_rounds)
 
     def reverse_win_turn(self, cards_to_pop):
         """gets the number cards of round, suppouse to be PLAYERS_NUMBER"""

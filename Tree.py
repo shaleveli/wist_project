@@ -5,6 +5,12 @@ import Heuristics
 import random
 
 
+class CardStatus(Enum):
+    DROPPED = 1
+    HAVE = 2
+    NOT = 3
+
+
 class CardsTreeData:
     """ data structure to pass cards for the next turn for next nodes.
         DO NOT EDIT this object outside this instance
@@ -32,29 +38,72 @@ class CardsTreeData:
         if player_idx is None:
             for idx in range(self.game.PLAYERS_NUMBER):
                 if idx != self.first_player_idx:
-                    self.players_children_cards[idx] = self.game.players[idx].legal_play(self.game.lead_card)
-                    self.players_children_cards[idx] = self.sequences_pruning(self.players_children_cards[idx])
+                    self.set_children_cards(idx, self.game.lead_card)
                 else:
-                    self.players_children_cards[idx] = self.game.players[idx].legal_play()
-                    self.players_children_cards[idx] = self.sequences_pruning(self.players_children_cards[idx])
+                    self.set_children_cards(idx, None)
         else:
             idx = player_idx
-            self.players_children_cards[idx] = self.game.players[idx].legal_play(self.game.lead_card)
-            self.players_children_cards[idx] = self.sequences_pruning(self.players_children_cards[idx])
+            self.set_children_cards(idx, self.game.lead_card)
+
+    def set_children_cards(self, idx, lead_card):
+        tmp = self.game.players[idx].legal_play(lead_card)
+        self.players_children_cards[idx] = self.sequences_pruning_testing(tmp)
 
     def children_cards(self, player_idx):
         return self.players_children_cards[player_idx]
 
+    # very good function
+    def sequences_pruning_testing(self, hand_cards):
+        """ more effecient sequence pruning, got O(N) on cards"""
+        STATUS_LOCATION = 0
+        CARD_LOCATION = 1
+        CARC_VALUE_OFFSET = 2
+
+        dropped_cards = self.game.dropped_cards()
+
+        symbol_counter = self.game.SYMBOL_NUMBER * [0]
+
+        cards_list = self.game.SYMBOL_NUMBER * [None]
+        for idx in range(self.game.SYMBOL_NUMBER):
+            cards_list[idx] = self.game.CARDS_IN_SYMBOL * [(CardStatus.NOT, None)]
+
+        for card in hand_cards:
+            cards_list[card.symbol_value][card.value - CARC_VALUE_OFFSET] = (CardStatus.HAVE, card)
+            # count the symbols
+            symbol_counter[card.symbol_value] = symbol_counter[card.symbol_value] + 1
+        for card in dropped_cards:
+            cards_list[card.symbol_value][card.value - CARC_VALUE_OFFSET] = (CardStatus.DROPPED, None)
+
+        for i in range(self.game.SYMBOL_NUMBER):
+            checked_card = None
+            if symbol_counter[i] > 2:
+                for j in range(self.game.CARDS_IN_SYMBOL):
+                    card_info = cards_list[i][j]
+                    if card_info[STATUS_LOCATION] == CardStatus.HAVE:
+                        if checked_card is None:
+                            checked_card = card_info[CARD_LOCATION]
+                        else:
+                            #print(checked_card)
+                            hand_cards.remove(checked_card)
+                            checked_card = card_info[CARD_LOCATION]
+                    elif card_info[STATUS_LOCATION] == CardStatus.NOT:
+                        checked_card = None
+                    else:
+                        pass
+        return hand_cards
+
+    # bad function. for example I have 6D and somone took 5D and 7D it will ignore 6D
     def sequences_pruning(self, cards):
         """modifies cards substracts double cards"""
         legal_player_cards = sorted(cards)
         idx = 0
         while idx < len(legal_player_cards) - 1:
             if self.game.similar_cards(legal_player_cards[idx], legal_player_cards[idx + 1]):
+                #print(legal_player_cards[idx])
                 legal_player_cards.remove(legal_player_cards[idx])
             else:
                 idx = idx + 1
-        random.shuffle(legal_player_cards)
+        #random.shuffle(legal_player_cards)
         return legal_player_cards
 
     def is_valid(self):

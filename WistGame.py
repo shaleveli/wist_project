@@ -9,6 +9,8 @@ class WistGame(Game):
     trump_symbol = None  # type: Symbol
     PLAYERS_NUMBER = 4
     CARDS_IN_HAND = 13
+    CARDS_IN_SYMBOL = 13
+    SYMBOL_NUMBER = 4
     active_player_idx = None  # type: int
     start_of_game = None  # type: bool
     trump_bidding_round = None  # type: int
